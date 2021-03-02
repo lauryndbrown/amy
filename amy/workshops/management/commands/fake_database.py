@@ -269,7 +269,12 @@ class Command(BaseCommand):
                 if "Homework" in r.name and randbool(0.5):
                     state = "n"
                 else:
-                    state = "p" if randbool(0.95) else "f"
+                    if randbool(0.95):
+                        state = "p"
+                    elif randbool(0.50):
+                        state = "a"
+                    else:
+                        state = "f"
 
                 evaluated_by = None if state == "n" else choice(trainers)
                 event = training if r.name == "Training" else None

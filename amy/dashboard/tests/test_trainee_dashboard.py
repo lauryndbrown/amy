@@ -185,6 +185,13 @@ class TestInstructorTrainingStatus(TestBase):
             trainee=self.admin, requirement=self.training, state="f"
         )
         rv = self.client.get(self.progress_url)
+        self.assertContains(rv, "Training Failed")
+
+    def test_training_asked_to_repeat(self):
+        TrainingProgress.objects.create(
+            trainee=self.admin, requirement=self.training, state="a"
+        )
+        rv = self.client.get(self.progress_url)
         self.assertContains(rv, "Training not passed yet")
 
     def test_training_not_finished(self):
