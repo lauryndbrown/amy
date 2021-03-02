@@ -480,7 +480,7 @@ class TestExportingPersonData(BaseExportingTest):
                     "url_required": True,
                     "event_required": False,
                 },
-                "state": "Ask to repeat",
+                "state": "Asked to repeat",
                 "discarded": False,
                 "evaluated_by": {
                     "name": "Super User",

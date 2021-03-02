@@ -2200,7 +2200,7 @@ class TrainingProgress(CreatedUpdatedMixin, models.Model):
         ("n", "Not evaluated yet"),
         ("f", "Failed"),
         ("p", "Passed"),
-        ("a", "Ask to repeat"),
+        ("a", "Asked to repeat"),
     )
     state = models.CharField(choices=STATES, default="p", max_length=1)
 

@@ -4,7 +4,7 @@ from django.db import migrations, models
 
 def move_failed_to_ask_to_repeat(apps, schema_editor):
     """
-    As per https://github.com/carpentries/amy/issues/1808 we want to move all currently "Failed" statuses to "Ask to Repeat"
+    As per https://github.com/carpentries/amy/issues/1808 we want to move all currently "Failed" statuses to "Asked to repeat"
     """
     TrainingProgress = apps.get_model('workshops', 'TrainingProgress')
     TrainingProgress.objects.filter(state="f").update(state="a")
@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='trainingprogress',
             name='state',
-            field=models.CharField(choices=[('n', 'Not evaluated yet'), ('f', 'Failed'), ('p', 'Passed'), ('a', 'Ask to repeat')], default='p', max_length=1),
+            field=models.CharField(choices=[('n', 'Not evaluated yet'), ('f', 'Failed'), ('p', 'Passed'), ('a', 'Asked to repeat')], default='p', max_length=1),
         ),
         migrations.RunPython(move_failed_to_ask_to_repeat, undo_move_failed_to_ask_to_repeat),
     ]
