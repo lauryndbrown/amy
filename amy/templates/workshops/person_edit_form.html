@@ -18,6 +18,11 @@
   </div>
   <div class="tab-pane" role="tabpanel" aria-labelledby="awards-tab" id="awards">
     {% if perms.workshops.add_awards %}
+      {% if failed_trainings %}
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+          <strong>Warning:</strong> Trainee failed previous training(s). Are you sure you want to continue?
+        </div>
+      {% endif %}
     <form class="form-horizontal" role="form" method="POST" action="{% url 'award_add' %}?next={{ request.get_full_path|urlencode }}#awards">
       {% crispy award_form %}
     </form>

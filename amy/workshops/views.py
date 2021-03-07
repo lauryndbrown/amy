@@ -108,6 +108,7 @@ from workshops.models import (
     Sponsorship,
     Tag,
     Task,
+    TrainingProgress,
 )
 from workshops.signals import create_comment_signal
 from workshops.util import (
@@ -615,6 +616,9 @@ class PersonUpdate(OnlyForAdminsMixin, UserPassesTestMixin, AMYUpdateView):
                 ),
                 "award_form": AwardForm(form_tag=False, prefix="award", **kwargs),
                 "task_form": TaskForm(form_tag=False, prefix="task", **kwargs),
+                "failed_trainings": TrainingProgress.objects.filter(
+                    state="f", trainee=self.object
+                ).exists(),
             }
         )
         return context
@@ -2043,6 +2047,19 @@ class MockAwardCreate(
                 initial.update({"event": tasks[0].event})
 
         return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        has_failed_trainings = TrainingProgress.objects.filter(
+            state="f", trainee=self.request.GET["person"]
+        ).exists()
+        if has_failed_trainings:
+            messages.warning(
+                self.request,
+                "Trainee failed previous training(s)."
+                " Are you sure you want to continue?",
+            )
+        return context
 
     def get_success_url(self):
         return reverse("badge_details", args=[self.object.badge.name])
