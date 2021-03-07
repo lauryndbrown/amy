@@ -2249,7 +2249,7 @@ class TrainingProgress(CreatedUpdatedMixin, models.Model):
             raise ValidationError({"event": msg})
 
         if self.state == "f" and not self.notes:
-            msg = "In the case of a Failed status, this field is required."
+            msg = "In the case of a Failed state, this field is required."
             raise ValidationError({"notes": msg})
 
         super().clean()
