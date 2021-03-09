@@ -1,0 +1,23 @@
+{{terms}}
+{% if terms %}
+<table class="table table-striped">
+    <tr>
+    <th>Title</th>
+    <th>Description</th>
+    <th>Date Responded</th>
+    <th>Response</th>
+    </tr>
+    {% for term in terms %}
+    <tr>
+    <td>
+    <td>{{term.content}}</td>
+        {% for option in term.options %}
+        <td>{{option.content}}</td>
+        {% endfor %}
+    </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No Consents.</p>
+{% endif %}

@@ -128,6 +128,7 @@ from workshops.util import (
     login_required,
     add_comment,
 )
+from consents.models import Term
 
 
 logger = logging.getLogger("amy.signals")
@@ -605,6 +606,12 @@ class PersonUpdate(OnlyForAdminsMixin, UserPassesTestMixin, AMYUpdateView):
             "initial": {"person": self.object},
             "widgets": {"person": HiddenInput()},
         }
+        # breakpoint()
+        terms = Term.objects.options_with_answers(person=self.object)
+        # consents = PersonConsent.objects.filter(archived_at=None)
+        # .select_related("term_option").select_related("term_option__term")
+        # term_options = TermOption.objects.filter(archived_at=None)
+        # .select_related('term')
         context.update(
             {
                 "awards": self.object.award_set.select_related(
@@ -613,6 +620,7 @@ class PersonUpdate(OnlyForAdminsMixin, UserPassesTestMixin, AMYUpdateView):
                 "tasks": self.object.task_set.select_related("role", "event").order_by(
                     "-event__slug"
                 ),
+                "terms": terms,
                 "award_form": AwardForm(form_tag=False, prefix="award", **kwargs),
                 "task_form": TaskForm(form_tag=False, prefix="task", **kwargs),
             }
