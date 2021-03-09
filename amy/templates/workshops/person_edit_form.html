@@ -103,8 +103,11 @@
     {% endif %}
   </div>
     <div class="tab-pane" role="tabpanel" aria-labelledby="consents-tab" id="consents">
-    {{terms}}
-    {% include "consents/consents_table.html" with terms=terms %}
+    {% if terms_form.terms %}
+      {% crispy terms_form %}
+    {% else %}
+      No Terms.
+    {% endif %}
     </div>
 </div>
 

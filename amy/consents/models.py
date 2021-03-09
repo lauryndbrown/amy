@@ -17,7 +17,7 @@ class TermQuerySet(models.query.QuerySet):
     def active(self, person: Person):
         return self.filter(person=person, archived_at=None)
 
-    def options_with_answers(self, person: Person):
+    def prefetch_options_with_answers(self, person: Person):
         return self.filter(archived_at=None).prefetch_related(
             Prefetch(
                 "termoption_set",
@@ -56,14 +56,11 @@ class TermOption(CreatedUpdatedArchivedMixin, models.Model):
     option_type = models.CharField(max_length=STR_MED, choices=OPTION_TYPE)
     content = models.TextField(verbose_name="Content", blank=True)
 
-    @classmethod
-    def options_for_term(cls, term):
-        return cls.objects.filter(term=term, archived_at=None)
-
 
 class PersonConsent(CreatedUpdatedArchivedMixin, models.Model):
     person = models.ForeignKey(Person, on_delete=models.PROTECT)
     term_option = models.ForeignKey(TermOption, on_delete=models.PROTECT)
+    # term = models.ForeignKey(Term, on_delete=models.PROTECT)
 
 
 # class Question():
