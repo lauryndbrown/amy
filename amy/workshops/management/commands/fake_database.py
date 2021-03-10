@@ -47,7 +47,7 @@ from workshops.models import (
     WorkshopRequest,
 )
 from workshops.util import create_username
-from consents.models import Term, TermOption, PersonConsent
+from consents.models import Term, TermOption, Consent
 
 
 def randbool(chances_of_true):
@@ -900,12 +900,13 @@ class Command(BaseCommand):
         )
 
         for person in Person.objects.all():
-            PersonConsent.objects.create(
-                person=person, term_option=user_old_enough_agree
+            Consent.objects.create(
+                person=person, term_option=user_old_enough_agree, term=user_old_enough
             )
-            PersonConsent.objects.create(
+            Consent.objects.create(
                 person=person,
                 term_option=choice([may_contact_agree, may_contact_disagree]),
+                term=may_contact,
             )
             may_publish_name_answer = choice(
                 [
@@ -915,8 +916,10 @@ class Command(BaseCommand):
                     may_publish_name_disagree,
                 ]
             )
-            PersonConsent.objects.create(
-                person=person, term_option=may_publish_name_answer
+            Consent.objects.create(
+                person=person,
+                term_option=may_publish_name_answer,
+                term=may_publish_name,
             )
 
     def handle(self, *args, **options):

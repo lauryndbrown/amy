@@ -1,5 +1,5 @@
 from django.test import TestCase
-from consents.models import Term, TermOption, PersonConsent
+from consents.models import Term, TermOption, Consent
 from workshops.tests.base import SuperuserMixin
 from datetime import datetime
 
@@ -16,7 +16,7 @@ class TermTest(SuperuserMixin, TestCase):
             content="Are you 18 or older?", slug="18-or-older", required_type="profile"
         )
         option_agree = TermOption.objects.create(term=term, option_type="agree")
-        PersonConsent.objects.create(person=self.admin, term_option=option_agree)
+        Consent.objects.create(person=self.admin, term_option=option_agree)
 
     def test_yes_and_no_term(self) -> None:
         # TODO add a manual migration to add basic cases
@@ -27,7 +27,7 @@ class TermTest(SuperuserMixin, TestCase):
         )
         option_agree = TermOption.objects.create(term=term, option_type="agree")
         option_agree = TermOption.objects.create(term=term, option_type="disagree")
-        PersonConsent.objects.create(person=self.admin, term_option=option_agree)
+        Consent.objects.create(person=self.admin, term_option=option_agree)
 
     def test_custom_choices_term(self) -> None:
         # TODO add a manual migration to add basic cases
@@ -50,7 +50,7 @@ class TermTest(SuperuserMixin, TestCase):
             content="Yes, and use the name associated with my profile.",
         )
         option_disagree = TermOption.objects.create(term=term, option_type="disagree")
-        PersonConsent.objects.create(person=self.admin, term_option=option_disagree)
+        Consent.objects.create(person=self.admin, term_option=option_disagree)
 
     def test_unset_term(self) -> None:
         # Unsetting term will simply be archiving the option
@@ -73,9 +73,9 @@ class TermTest(SuperuserMixin, TestCase):
             content="Yes, and use the name associated with my profile.",
         )
         option_disagree = TermOption.objects.create(term=term, option_type="disagree")
-        PersonConsent.objects.create(person=self.admin, term_option=option_disagree)
+        Consent.objects.create(person=self.admin, term_option=option_disagree)
 
-        consent = PersonConsent.objects.get(person=self.admin, term_option__term=term)
+        consent = Consent.objects.get(person=self.admin, term_option__term=term)
         consent.archived_at = datetime.now()
         consent.save()
 
@@ -100,12 +100,10 @@ class TermTest(SuperuserMixin, TestCase):
             content="Yes, and use the name associated with my profile.",
         )
         option_disagree = TermOption.objects.create(term=term, option_type="disagree")
-        PersonConsent.objects.create(person=self.admin, term_option=option_disagree)
+        Consent.objects.create(person=self.admin, term_option=option_disagree)
 
-        consent = PersonConsent.objects.get(person=self.admin, term_option__term=term)
+        consent = Consent.objects.get(person=self.admin, term_option__term=term)
         consent.archived_at = datetime.now()
         consent.save()
 
-        consent = PersonConsent.objects.create(
-            person=self.admin, term_option=option_agree
-        )
+        consent = Consent.objects.create(person=self.admin, term_option=option_agree)

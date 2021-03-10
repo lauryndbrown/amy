@@ -128,7 +128,7 @@ from workshops.util import (
     login_required,
     add_comment,
 )
-from consents.forms import TermsForm
+from consents.forms import ConsentsForm
 
 
 logger = logging.getLogger("amy.signals")
@@ -608,7 +608,7 @@ class PersonUpdate(OnlyForAdminsMixin, UserPassesTestMixin, AMYUpdateView):
         }
         # breakpoint()
         # terms = Term.objects.prefetch_options_with_answers(person=self.object)
-        # consents = PersonConsent.objects.filter(archived_at=None)
+        # consents = Consent.objects.filter(archived_at=None)
         # .select_related("term_option").select_related("term_option__term")
         # term_options = TermOption.objects.filter(archived_at=None)
         # .select_related('term')
@@ -621,7 +621,9 @@ class PersonUpdate(OnlyForAdminsMixin, UserPassesTestMixin, AMYUpdateView):
                     "-event__slug"
                 ),
                 # "terms": terms,
-                "terms_form": TermsForm(form_tag=False, prefix="terms", **kwargs),
+                "consents_form": ConsentsForm(
+                    form_tag=False, prefix="consents", **kwargs
+                ),
                 "award_form": AwardForm(form_tag=False, prefix="award", **kwargs),
                 "task_form": TaskForm(form_tag=False, prefix="task", **kwargs),
             }
@@ -629,6 +631,7 @@ class PersonUpdate(OnlyForAdminsMixin, UserPassesTestMixin, AMYUpdateView):
         return context
 
     def form_valid(self, form):
+        breakpoint()
         self.object = form.save(commit=False)
         # remove existing Qualifications for user
         Qualification.objects.filter(person=self.object).delete()

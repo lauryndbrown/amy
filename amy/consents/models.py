@@ -17,19 +17,11 @@ class TermQuerySet(models.query.QuerySet):
     def active(self, person: Person):
         return self.filter(person=person, archived_at=None)
 
-    def prefetch_options_with_answers(self, person: Person):
+    def prefetch_options(self, person: Person):
         return self.filter(archived_at=None).prefetch_related(
             Prefetch(
                 "termoption_set",
-                queryset=TermOption.objects.filter(archived_at=None).prefetch_related(
-                    Prefetch(
-                        "personconsent_set",
-                        queryset=PersonConsent.objects.filter(
-                            archived_at=None, person=person
-                        ),
-                        to_attr="answers",
-                    )
-                ),
+                queryset=TermOption.objects.filter(archived_at=None),
                 to_attr="options",
             )
         )
@@ -57,10 +49,13 @@ class TermOption(CreatedUpdatedArchivedMixin, models.Model):
     content = models.TextField(verbose_name="Content", blank=True)
 
 
-class PersonConsent(CreatedUpdatedArchivedMixin, models.Model):
+class Consent(CreatedUpdatedArchivedMixin, models.Model):
     person = models.ForeignKey(Person, on_delete=models.PROTECT)
+    term = models.ForeignKey(Term, on_delete=models.PROTECT)
     term_option = models.ForeignKey(TermOption, on_delete=models.PROTECT)
-    # term = models.ForeignKey(Term, on_delete=models.PROTECT)
+
+    # TODO: add constraint term.id == term_option.term.id
+    # or remove term and just reach into term_option
 
 
 # class Question():

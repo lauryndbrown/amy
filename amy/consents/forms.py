@@ -1,7 +1,6 @@
-from consents.models import PersonConsent
+from consents.models import Consent
 from django import forms
 from workshops.forms import BootstrapHelper
-from workshops.models import Person
 from consents.models import Term, TermOption
 from datetime import datetime
 from workshops.forms import WidgetOverrideMixin
@@ -30,40 +29,41 @@ from workshops.forms import WidgetOverrideMixin
 #             )
 
 
-class TermsForm(WidgetOverrideMixin, forms.Form):
-    helper = BootstrapHelper(wider_labels=True, add_cancel_button=False)
-
+class ConsentsForm(WidgetOverrideMixin, forms.ModelForm):
     OPTION_DISPLAY = {"agree": "Yes", "disagree": "No", "unset": "unset"}
+
+    class Meta:
+        model = Consent
+        fields = ["person"]
 
     def __init__(self, *args, **kwargs):
         form_tag = kwargs.pop("form_tag", True)
         super().__init__(*args, **kwargs)
-        person = self.fields["person"]
 
-        self._build_terms_form(person)
+        self._build_terms_form()
         self.helper = BootstrapHelper(add_cancel_button=False, form_tag=form_tag)
-        # set up a layout object for the helper
-        # self.helper.layout = self.helper.build_default_layout(self)
 
-    # def single_option(term: Term) -> bool:
-    #     return len(term.options) == 1
+    def _build_terms_form(self) -> None:
+        """
+        Construct a Form of all nonarchived Terms with the
+        consent answers added as initial.
+        """
 
-    # def two_options(term: Term) -> bool:
-    #     return len(term.options) == 1
-    def _build_terms_form(self, person: Person) -> None:
         def option_display_value(option: TermOption) -> str:
             return option.content or self.OPTION_DISPLAY[option.option_type]
 
-        self.terms = Term.objects.prefetch_options_with_answers(person=person)
+        person = self.initial["person"]
+        self.terms = Term.objects.prefetch_options(person=person)
+        term_id_by_option_id = {
+            consent.term_id: consent.term_option_id
+            for consent in Consent.objects.filter(
+                archived_at=None, term__in=self.terms, person=person
+            )
+        }
         for term in self.terms:
             options = [(opt.id, option_display_value(opt)) for opt in term.options]
             required = False if term.required_type == "optional" else True
-            try:
-                initial = PersonConsent.objects.get(
-                    person=person, term_option__term=term
-                ).option_term.id
-            except PersonConsent.DoesNotExist:
-                initial = None
+            initial = term_id_by_option_id.get(term.id, None)
 
             self.fields[term.slug] = forms.ChoiceField(
                 widget=forms.RadioSelect,
@@ -78,13 +78,13 @@ class TermsForm(WidgetOverrideMixin, forms.Form):
         super().save(*args, **kwargs)
         for term in self.terms:
             option_id = self.cleaned_data.get(term.slug)
-            consent, created = PersonConsent.objects.get_or_create(
-                person=person, term_option__term=term
-            )
+            consent, created = Consent.objects.get_or_create(person=person, term=term)
             if not created:
                 consent.archived_at = datetime.now()
                 consent.save()
-                PersonConsent.objects.create(person=person, term_option_id=option_id)
+                Consent.objects.create(
+                    person=person, term_option_id=option_id, term_id=term.id
+                )
 
     def _yes_only(self, term) -> bool:
         return len(term.options) == 1

@@ -103,11 +103,13 @@
     {% endif %}
   </div>
     <div class="tab-pane" role="tabpanel" aria-labelledby="consents-tab" id="consents">
-    {% if terms_form.terms %}
-      {% crispy terms_form %}
-    {% else %}
-      No Terms.
-    {% endif %}
+      <form class="form-horizontal" role="form" method="POST" action="{% url 'consents_edit' %}?next={{ request.get_full_path|urlencode }}#consents">
+      {% if consents_form.terms %}
+        {% crispy consents_form %}
+      {% else %}
+        No Terms.
+      {% endif %}
+      </forn>
     </div>
 </div>
 
