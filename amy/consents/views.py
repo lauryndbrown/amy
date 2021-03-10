@@ -7,6 +7,7 @@ from workshops.base_views import AMYCreateView
 class ConsentsUpdate(RedirectSupportMixin, AMYCreateView):
     model = Consent
     form_class = ConsentsForm
+    success_url = "consents/edit"
     # queryset = Event.objects.select_related(
     #     "assigned_to",
     #     "administrator",
@@ -15,8 +16,17 @@ class ConsentsUpdate(RedirectSupportMixin, AMYCreateView):
     # slug_field = "slug"
     # template_name = "workshops/event_edit_form.html"
 
+    def get_success_url(self):
+        # default_url = super().get_success_url()
+        next_url = self.request.GET.get("next", None)
+        return next_url
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"prefix": "consents"})
+        return kwargs
+
     def get_context_data(self, **kwargs):
-        breakpoint()
         context = super().get_context_data(**kwargs)
         # kwargs = {
         #     "initial": {"person": self.object},
@@ -25,6 +35,5 @@ class ConsentsUpdate(RedirectSupportMixin, AMYCreateView):
         return context
 
     def form_valid(self, form):
-        breakpoint()
         res = super().form_valid(form)
         return res

@@ -606,7 +606,6 @@ class PersonUpdate(OnlyForAdminsMixin, UserPassesTestMixin, AMYUpdateView):
             "initial": {"person": self.object},
             "widgets": {"person": HiddenInput()},
         }
-        # breakpoint()
         # terms = Term.objects.prefetch_options_with_answers(person=self.object)
         # consents = Consent.objects.filter(archived_at=None)
         # .select_related("term_option").select_related("term_option__term")
@@ -631,7 +630,6 @@ class PersonUpdate(OnlyForAdminsMixin, UserPassesTestMixin, AMYUpdateView):
         return context
 
     def form_valid(self, form):
-        breakpoint()
         self.object = form.save(commit=False)
         # remove existing Qualifications for user
         Qualification.objects.filter(person=self.object).delete()

@@ -38,12 +38,20 @@ class ConsentsForm(WidgetOverrideMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         form_tag = kwargs.pop("form_tag", True)
+        # TODO how to get the person value out of the person field
+        if "data" in kwargs:
+            if "person" in kwargs["data"]:
+                person = kwargs["data"]["person"]
+            else:
+                person = kwargs["data"]["consents-person"]
+        else:
+            person = kwargs["initial"]["person"]
         super().__init__(*args, **kwargs)
 
-        self._build_terms_form()
+        self._build_terms_form(person)
         self.helper = BootstrapHelper(add_cancel_button=False, form_tag=form_tag)
 
-    def _build_terms_form(self) -> None:
+    def _build_terms_form(self, person) -> None:
         """
         Construct a Form of all nonarchived Terms with the
         consent answers added as initial.
@@ -52,7 +60,7 @@ class ConsentsForm(WidgetOverrideMixin, forms.ModelForm):
         def option_display_value(option: TermOption) -> str:
             return option.content or self.OPTION_DISPLAY[option.option_type]
 
-        person = self.initial["person"]
+        # person = self.initial.get("person"
         self.terms = Term.objects.prefetch_options(person=person)
         term_id_by_option_id = {
             consent.term_id: consent.term_option_id
@@ -74,17 +82,24 @@ class ConsentsForm(WidgetOverrideMixin, forms.ModelForm):
             )
 
     def save(self, *args, **kwargs):
-        person = kwargs.pop("person")
-        super().save(*args, **kwargs)
+        person = self.cleaned_data["person"]
+        # super().save(*args, **kwargs)
         for term in self.terms:
             option_id = self.cleaned_data.get(term.slug)
-            consent, created = Consent.objects.get_or_create(person=person, term=term)
-            if not created:
+            if not option_id:
+                continue
+            try:
+                consent = Consent.objects.get(
+                    person=person, term=term, archived_at=None
+                )
+            except Consent.DoesNotExist:
+                pass
+            else:
                 consent.archived_at = datetime.now()
                 consent.save()
-                Consent.objects.create(
-                    person=person, term_option_id=option_id, term_id=term.id
-                )
+            Consent.objects.create(
+                person=person, term_option_id=option_id, term_id=term.id
+            )
 
     def _yes_only(self, term) -> bool:
         return len(term.options) == 1

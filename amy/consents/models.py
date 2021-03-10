@@ -2,6 +2,7 @@ from django.db import models
 from workshops.mixins import CreatedUpdatedMixin
 from workshops.models import Person, STR_MED
 from django.db.models import Prefetch
+from django.urls import reverse
 
 
 class CreatedUpdatedArchivedMixin(CreatedUpdatedMixin):
@@ -54,8 +55,12 @@ class Consent(CreatedUpdatedArchivedMixin, models.Model):
     term = models.ForeignKey(Term, on_delete=models.PROTECT)
     term_option = models.ForeignKey(TermOption, on_delete=models.PROTECT)
 
+    def get_absolute_url(self):
+        return reverse("consent_details", kwargs={"consent_id": self.id})
+
     # TODO: add constraint term.id == term_option.term.id
     # or remove term and just reach into term_option
+    # TODO: add constraint unique person, term, archived_at=None
 
 
 # class Question():
