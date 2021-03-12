@@ -1,2 +1,2 @@
-class ConsentViewTest:
+class TermViewTest:
     pass

@@ -385,7 +385,7 @@ class Command(BaseCommand):
             # assume that the username is provided by the person
             username = social_username
 
-        github = social_username
+        github = social_username + str(randint(1, 100))
         twitter = social_username
         url = self.faker.url() if randbool(0.5) else ""
 
@@ -856,6 +856,8 @@ class Command(BaseCommand):
             req.save()
 
     def fake_terms_and_consents(self):
+        count = Person.objects.all().count() * 3  # number of consents generated
+        self.stdout.write("Generating {} fake " "terms and consents...".format(count))
         user_old_enough = Term.objects.create(
             content="Are you 18 years of age or older?",
             slug="18-or-older",

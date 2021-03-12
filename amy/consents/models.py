@@ -20,10 +20,16 @@ class TermQuerySet(models.query.QuerySet):
         return self.filter(archived_at=None)
 
     def prefetch_active_options(self):
+        return self._prefetch_options(TermOption.objects.active())
+
+    def prefetch_all_options(self):
+        return self._prefetch_options(TermOption.objects.all())
+
+    def _prefetch_options(self, options_queryset):
         return self.prefetch_related(
             Prefetch(
                 "termoption_set",
-                queryset=TermOption.objects.active(),
+                queryset=options_queryset,
                 to_attr="options",
             )
         )
@@ -56,14 +62,14 @@ class Term(CreatedUpdatedArchivedMixin, models.Model):
 class TermOption(CreatedUpdatedArchivedMixin, models.Model):
     OPTION_TYPE = (("agree", "Agree"), ("decline", "Decline"), ("unset", "Unset"))
 
-    term = models.ForeignKey(Term, on_delete=models.PROTECT)
+    term = models.ForeignKey(Term, on_delete=models.CASCADE)
     option_type = models.CharField(max_length=STR_MED, choices=OPTION_TYPE)
     content = models.TextField(verbose_name="Content", blank=True)
     objects = TermOptionQuerySet.as_manager()
 
 
 class Consent(CreatedUpdatedArchivedMixin, models.Model):
-    person = models.ForeignKey(Person, on_delete=models.PROTECT)
+    person = models.ForeignKey(Person, on_delete=models.CASCADE)
     term = models.ForeignKey(Term, on_delete=models.PROTECT)
     term_option = models.ForeignKey(TermOption, on_delete=models.PROTECT)
     objects = ConsentQuerySet.as_manager()

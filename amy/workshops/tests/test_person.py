@@ -153,6 +153,18 @@ class TestPerson(TestBase):
         self.assertEqual(self.spiderman.task_set.count(), 1)
         self.assertEqual(self.spiderman.task_set.first().role, role)
 
+    # def test_edit_person_add_consent(self) -> None:
+    #     url = reverse("person_edit", args=[self.spiderman.pk])
+    #     person_edit = self.app.get(url, user="admin")
+    #     consents_form = person_edit.forms[3]
+    #     breakpoint()
+    #     # award_form["award-badge"] = self.swc_instructor.pk
+
+    #     self.assertEqual(self.spiderman.award_set.count(), 0)
+    #     self.assertRedirects(award_form.submit(), url)
+    #     self.assertEqual(self.spiderman.award_set.count(), 1)
+    #     self.assertEqual(self.spiderman.award_set.first().badge, self.swc_instructor)
+
     def test_edit_person_permissions(self):
         """ Make sure we can set up user permissions correctly. """
 

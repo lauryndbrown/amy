@@ -1,0 +1,43 @@
+{% extends "base_nav.html" %}
+
+{% load revisions %}
+{% load links %}
+
+{% block content %}
+{% last_modified task %}
+
+<table class="table table-striped">
+  <tr><th>Slug:</th><td>{{ term.slug }}</td></tr>
+  <tr><th>Content:</th><td>{{ term.content }}</td></tr>
+  <tr><th>Options:</th>
+      <td>
+        {% if term.options %}
+        <ul>
+        {% for option in term.options %}
+        <li><a href="{{ option.get_absolute_url }}">{{ option }}</a></li>
+        {% endfor %}
+        </ul>
+        {% else %}
+        &mdash;
+        {% endif %}
+      </td></tr>
+</table>
+
+<div class="clearfix">
+  {% if perms.consents.change_term %}
+  <p class="edit-object float-left"><a href="{% url 'term_edit' task.id %}" class="btn btn-primary">Edit</a></p>
+  {% else %}
+  <p class="edit-object float-left"><a href="{% url 'term_edit' task.id %}" class="btn btn-primary disabled">Edit</a></p>
+  {% endif %}
+  <div class="delete-object float-right">
+    {% if perms.consents.delete_term %}
+      <form action="{% url 'task_delete' task.id %}" onsubmit='return confirm("Are you sure you wish to remove \"{{ term }}\"?")' method="POST">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete term</button>
+      </form>
+    {% else %}
+    <button class="btn btn-danger disabled">Delete term</button>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

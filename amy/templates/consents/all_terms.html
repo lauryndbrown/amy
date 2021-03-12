@@ -1,0 +1,48 @@
+{% extends "base_nav_sidebar.html" %}
+
+{% load pagination %}
+{% load links %}
+
+{% block content %}
+    {% comment %} {% if perms.workshops.add_term %}
+    {% else %}
+    <p><a href="{% url 'term_add' %}" class="btn btn-success disabled">New term</a></p>
+    {% endif %}
+        <p><a href="{% url 'term_add' %}" class="btn btn-success">New term</a></p>
+
+{% if all_terms %}
+    <table class="table table-striped">
+        <tr>
+            <th>Content</th>
+            <th class="additional-links"></th>
+        </tr>
+    {% for term in all_terms %}
+        <tr>
+            <td>{{ term.content|default:"—" }}</td>
+            <td>
+                <a href="{% url 'term_details' term.id %}" title="View {{ term }}"><i class="fas fa-info-circle"></i></a>
+                &nbsp;
+                {% if perms.workshops.change_term %}
+                <a href="{% url 'term_edit' term.id %}" title="Edit {{ term }}"><i class="fas fa-edit"></i></a>
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+    </table>
+    {% pagination all_terms %}
+    {% if perms.workshops.add_term %}
+    <p><a href="{% url 'term_add' %}" class="btn btn-success">New term</a></p>
+    {% else %}
+    <p><a href="{% url 'term_add' %}" class="btn btn-success disabled">New term</a></p>
+    {% endif %}
+{% else %}
+    <p>No terms.</p>
+{% endif %} {% endcomment %}
+
+{% if all_terms %}
+    {{ all_tasks }}
+{% else %}
+    <p>No terms.</p>
+{% endif %}
+
+{% endblock %}

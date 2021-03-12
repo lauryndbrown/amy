@@ -5,33 +5,39 @@ from consents.models import Term, TermOption
 from datetime import datetime
 from workshops.forms import WidgetOverrideMixin
 
-# class TermsForm(forms.Form):
-#     helper = BootstrapHelper(wider_labels=True, add_cancel_button=False)
+OPTION_DISPLAY = {"agree": "Yes", "disagree": "No", "unset": "unset"}
 
-#     def __init__(self, *args, **kwargs):
-#         person = kwargs["person"]
-#         self._build_terms_form(person)
-#         super().__init__(*args, **kwargs)
-#         # set up a layout object for the helper
-#         self.helper.layout = self.helper.build_default_layout(self)
 
-#     # def single_option(term: Term) -> bool:
-#     #     return len(term.options) == 1
+def option_display_value(option: TermOption) -> str:
+    return option.content or OPTION_DISPLAY[option.option_type]
 
-#     # def two_options(term: Term) -> bool:
-#     #     return len(term.options) == 1
-#     def _build_terms_form(self, person: Person) -> None:
-#         terms = Term.objects.options_with_answers()
-#         for term in terms:
-#             options = [(opt.id, opt.content) for opt in term.options]
-#             self.fields[term.slug] = forms.ChoiceField(
-#                 widget=forms.RadioSelect, choices=options
-#             )
+
+class TermForm(forms.ModelForm):
+    class Meta:
+        model = Term
+        fields = ["content"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["options"] = self.create_options_field()
+
+    def create_options_field(self):
+        if not self.instance:
+            return []
+        options = self.instance.prefetch_active_options().options
+        options = [(opt.id, option_display_value(opt)) for opt in self.instance.options]
+
+        required = False if self.instance.required_type == "optional" else True
+        field = forms.ChoiceField(
+            widget=forms.RadioSelect,
+            choices=options,
+            label=self.instance.content,
+            required=required,
+        )
+        return field
 
 
 class ConsentsForm(WidgetOverrideMixin, forms.ModelForm):
-    OPTION_DISPLAY = {"agree": "Yes", "disagree": "No", "unset": "unset"}
-
     class Meta:
         model = Consent
         fields = ["person"]

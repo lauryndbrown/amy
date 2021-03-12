@@ -39,7 +39,7 @@ urlpatterns = [
     path('trainings/', include('trainings.urls')),
     path('workshops/', include('workshops.urls')),
     path('select_lookups/', include('workshops.lookups')),  # autocomplete lookups
-    path('consents/', include('consents.urls')),
+    path('terms/', include('consents.urls')),
 
     # for webhooks from Mailgun
     path('mail_hooks/', include('anymail.urls')),

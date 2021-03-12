@@ -3,7 +3,7 @@ from django.urls import path, include
 from consents import views
 
 urlpatterns = [
-    path('terms/', include([
+    path('', include([
         path('', views.AllTerms.as_view(), name='all_terms'),
         path('add/', views.TermCreate.as_view(), name='term_add'),
     ])),
