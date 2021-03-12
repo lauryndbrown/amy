@@ -11,6 +11,7 @@ from workshops.base_views import RedirectSupportMixin
 from consents.forms import ConsentsForm
 from workshops.base_views import AMYCreateView
 from workshops.util import OnlyForAdminsMixin
+from consents.filters import TermFilter
 
 # TODO:
 # - Add PermissionRequiredMixin to Create, Update, And Delete views
@@ -18,8 +19,9 @@ from workshops.util import OnlyForAdminsMixin
 
 class AllTerms(OnlyForAdminsMixin, AMYListView):
     context_object_name = "all_terms"
-    queryset = Term.objects.prefetch_all_options()
-    # filter_class = TermFilter
+    queryset = Term.objects.all().prefetch_all_options()
+    template_name = "consents/all_terms.html"
+    filter_class = TermFilter
     title = "All Terms"
 
 
