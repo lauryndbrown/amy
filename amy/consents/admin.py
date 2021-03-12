@@ -13,9 +13,4 @@ class TermAdmin(admin.ModelAdmin):
     ]
 
 
-class TermOptionAdmin(admin.ModelAdmin):
-    list_display = ("term_id", "option_type", "content")
-
-
 admin.site.register(Term, TermAdmin)
-admin.site.register(TermOption, TermOptionAdmin)
