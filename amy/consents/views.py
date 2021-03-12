@@ -1,10 +1,50 @@
+from workshops.base_views import (
+    AMYDeleteView,
+    AMYDetailView,
+    AMYListView,
+    AMYUpdateView,
+)
+from consents.models import Term
+from consents.forms import TermForm
 from consents.models import Consent
 from workshops.base_views import RedirectSupportMixin
 from consents.forms import ConsentsForm
 from workshops.base_views import AMYCreateView
+from workshops.util import OnlyForAdminsMixin
+
+# TODO:
+# - Add PermissionRequiredMixin to Create, Update, And Delete views
 
 
-class ConsentsUpdate(RedirectSupportMixin, AMYCreateView):
+class AllTerms(OnlyForAdminsMixin, AMYListView):
+    context_object_name = "all_terms"
+    queryset = Term.objects.prefetch_all_options()
+    # filter_class = TermFilter
+    title = "All Terms"
+
+
+class TermDetails(OnlyForAdminsMixin, AMYDetailView):
+    context_object_name = "term"
+    template_name = "terms/term.html"
+    pk_url_kwarg = "term_id"
+    queryset = Term.objects.prefetch_all_options()
+
+
+class TermCreate(OnlyForAdminsMixin, AMYCreateView):
+    model = Term
+    pk_url_kwarg = "term_id"
+    form_class = TermForm
+
+
+class TermUpdate(OnlyForAdminsMixin, AMYUpdateView):
+    pass
+
+
+class TermDelete(OnlyForAdminsMixin, AMYDeleteView):
+    pass
+
+
+class ConsentUpdate(RedirectSupportMixin, AMYCreateView):
     model = Consent
     form_class = ConsentsForm
     success_url = "consents/edit"
