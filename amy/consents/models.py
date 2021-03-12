@@ -3,6 +3,7 @@ from workshops.mixins import CreatedUpdatedMixin
 from workshops.models import Person, STR_MED
 from django.db.models import Prefetch
 from django.urls import reverse
+from django.core.exceptions import ValidationError
 
 
 class CreatedUpdatedArchivedMixin(CreatedUpdatedMixin):
@@ -15,17 +16,27 @@ class CreatedUpdatedArchivedMixin(CreatedUpdatedMixin):
 
 
 class TermQuerySet(models.query.QuerySet):
-    def active(self, person: Person):
-        return self.filter(person=person, archived_at=None)
+    def active(self):
+        return self.filter(archived_at=None)
 
-    def prefetch_options(self, person: Person):
-        return self.filter(archived_at=None).prefetch_related(
+    def prefetch_active_options(self):
+        return self.prefetch_related(
             Prefetch(
                 "termoption_set",
-                queryset=TermOption.objects.filter(archived_at=None),
+                queryset=TermOption.objects.active(),
                 to_attr="options",
             )
         )
+
+
+class TermOptionQuerySet(models.query.QuerySet):
+    def active(self):
+        return self.filter(archived_at=None)
+
+
+class ConsentQuerySet(models.query.QuerySet):
+    def active(self):
+        return self.filter(archived_at=None)
 
 
 class Term(CreatedUpdatedArchivedMixin, models.Model):
@@ -48,37 +59,28 @@ class TermOption(CreatedUpdatedArchivedMixin, models.Model):
     term = models.ForeignKey(Term, on_delete=models.PROTECT)
     option_type = models.CharField(max_length=STR_MED, choices=OPTION_TYPE)
     content = models.TextField(verbose_name="Content", blank=True)
+    objects = TermOptionQuerySet.as_manager()
 
 
 class Consent(CreatedUpdatedArchivedMixin, models.Model):
     person = models.ForeignKey(Person, on_delete=models.PROTECT)
     term = models.ForeignKey(Term, on_delete=models.PROTECT)
     term_option = models.ForeignKey(TermOption, on_delete=models.PROTECT)
+    objects = ConsentQuerySet.as_manager()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["person", "term"],
+                name="person__term__unique__when__archived_at__null",
+                condition=models.Q(archived_at__isnull=True),
+            ),
+        ]
 
     def get_absolute_url(self):
         return reverse("consent_details", kwargs={"consent_id": self.id})
 
-    # TODO: add constraint term.id == term_option.term.id
-    # or remove term and just reach into term_option
-    # TODO: add constraint unique person, term, archived_at=None
-
-
-# class Question():
-#     content = models.TextField(verbose_name="Content")
-
-#     def answers():
-#         QuestionOption.objects.filter(
-
-# class QuestionOption():
-#     OPTION_TYPE = (
-#         ("agree", "Agree"),
-#         ("decline", "Decline"),
-#         ("unset", "Unset")
-#     )
-
-#     option_type = models.CharField(max_length=STR_MED, choices=OPTION_TYPE)
-#     content = models.TextField(verbose_name="Content")
-# class Consent(CreatedUpdatedArchivedMixin, models.Model):
-#     question = models.ForeignKey(Question, on_delete=models.PROTECT)
-#     answer  = models.ForeignKey(Person, on_delete=models.PROTECT)
-#     user = models.ForeignKey(Person, on_delete=models.PROTECT)
+    def save(self, *args, **kwargs):
+        if self.term_id != self.term_option.term_id:
+            raise ValidationError("Consent term.id must match term_option.term_id")
+        return super().save(*args, **kwargs)

@@ -1,109 +1,130 @@
 from django.test import TestCase
 from consents.models import Term, TermOption, Consent
-from workshops.tests.base import SuperuserMixin
-from datetime import datetime
+from workshops.models import Person
+from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 
 
-# Create your tests here.
-class TermTest(SuperuserMixin, TestCase):
-    def setUp(self):
-        super().setUp()
-        self._setUpSuperuser()  # creates self.admin
-
-    def test_yes_only_term(self) -> None:
-        # TODO add a manual migration to add basic cases
-        term = Term.objects.create(
-            content="Are you 18 or older?", slug="18-or-older", required_type="profile"
+class TestQuerySet(TestCase):
+    def test_term_active(self) -> None:
+        Term.objects.create(content="term1", slug="term1", archived_at=timezone.now())
+        term2 = Term.objects.create(
+            content="term2",
+            slug="term2",
         )
-        option_agree = TermOption.objects.create(term=term, option_type="agree")
-        Consent.objects.create(person=self.admin, term_option=option_agree)
+        term3 = Term.objects.create(
+            content="term3",
+            slug="term3",
+        )
 
-    def test_yes_and_no_term(self) -> None:
-        # TODO add a manual migration to add basic cases
-        term = Term.objects.create(
-            content="May contact: Allow to contact from The Carpentries according to"
-            " the Privacy Policy.",
-            slug="may-contact",
-        )
-        option_agree = TermOption.objects.create(term=term, option_type="agree")
-        option_agree = TermOption.objects.create(term=term, option_type="disagree")
-        Consent.objects.create(person=self.admin, term_option=option_agree)
+        self.assertCountEqual(Term.objects.active(), [term2, term3])
 
-    def test_custom_choices_term(self) -> None:
-        # TODO add a manual migration to add basic cases
-        term = Term.objects.create(
-            content="Do you consent to have your name or identity"
-            " associated with lesson publications?",
-            slug="may-publish-name",
+    def test_term_prefetch_active_options(self) -> None:
+        term1 = Term.objects.create(
+            content="term1", slug="term1", archived_at=timezone.now()
         )
-        TermOption.objects.create(
-            term=term, option_type="agree", content="Yes, and only use my GitHub Handle"
+        term2 = Term.objects.create(
+            content="term2",
+            slug="term2",
         )
-        TermOption.objects.create(
-            term=term,
+
+        term1_option1 = TermOption.objects.create(
+            term=term1,
             option_type="agree",
-            content="Yes, and use the name associated with my ORCID profile",
+            content="option1",
         )
         TermOption.objects.create(
-            term=term,
+            term=term1,
             option_type="agree",
-            content="Yes, and use the name associated with my profile.",
+            content="option2",
+            archived_at=timezone.now(),
         )
-        option_disagree = TermOption.objects.create(term=term, option_type="disagree")
-        Consent.objects.create(person=self.admin, term_option=option_disagree)
-
-    def test_unset_term(self) -> None:
-        # Unsetting term will simply be archiving the option
-        term = Term.objects.create(
-            content="Do you consent to have your name or identity associated with"
-            " lesson publications?",
-            slug="may-publish-name",
-        )
-        TermOption.objects.create(
-            term=term, option_type="agree", content="Yes, and only use my GitHub Handle"
-        )
-        TermOption.objects.create(
-            term=term,
+        term2_option1 = TermOption.objects.create(
+            term=term2,
             option_type="agree",
-            content="Yes, and use the name associated with my ORCID profile",
+            content="option1",
         )
-        TermOption.objects.create(
-            term=term,
+        terms = Term.objects.all().prefetch_active_options()
+        self.assertEqual(terms.filter(id=term1.id)[0].options, [term1_option1])
+        self.assertEqual(terms.filter(id=term2.id)[0].options, [term2_option1])
+
+    def test_consent_active(self) -> None:
+        term1 = Term.objects.create(
+            content="term1", slug="term1", archived_at=timezone.now()
+        )
+        term1_option1 = TermOption.objects.create(
+            term=term1,
             option_type="agree",
-            content="Yes, and use the name associated with my profile.",
+            content="option1",
         )
-        option_disagree = TermOption.objects.create(term=term, option_type="disagree")
-        Consent.objects.create(person=self.admin, term_option=option_disagree)
+        person1 = Person.objects.create(
+            personal="Harry", family="Potter", email="hp@magic.uk"
+        )
+        person2 = Person.objects.create(
+            personal="Ron",
+            family="Weasley",
+            email="rw@magic.uk",
+            username="rweasley",
+        )
+        Consent.objects.create(
+            person=person1,
+            term=term1,
+            term_option=term1_option1,
+            archived_at=timezone.now(),
+        )
+        consent1 = Consent.objects.create(
+            person=person1, term=term1, term_option=term1_option1
+        )
+        consent2 = Consent.objects.create(
+            person=person2, term=term1, term_option=term1_option1
+        )
+        consents = Consent.objects.active()
 
-        consent = Consent.objects.get(person=self.admin, term_option__term=term)
-        consent.archived_at = datetime.now()
-        consent.save()
+        self.assertCountEqual(consents, [consent1, consent2])
 
-    def test_changing_an_option(self) -> None:
-        # Unsetting term will simply be archiving the option
-        term = Term.objects.create(
-            content="Do you consent to have your name or identity associated with"
-            " lesson publications?",
-            slug="may-publish-name",
+
+class TestConsentModel(TestCase):
+    def test_unique_constraint(self) -> None:
+        term1 = Term.objects.create(
+            content="term1", slug="term1", archived_at=timezone.now()
         )
-        TermOption.objects.create(
-            term=term, option_type="agree", content="Yes, and only use my GitHub Handle"
-        )
-        TermOption.objects.create(
-            term=term,
+        term1_option1 = TermOption.objects.create(
+            term=term1,
             option_type="agree",
-            content="Yes, and use the name associated with my ORCID profile",
+            content="option1",
         )
-        option_agree = TermOption.objects.create(
-            term=term,
+        term1_option2 = TermOption.objects.create(
+            term=term1,
             option_type="agree",
-            content="Yes, and use the name associated with my profile.",
+            content="option2",
         )
-        option_disagree = TermOption.objects.create(term=term, option_type="disagree")
-        Consent.objects.create(person=self.admin, term_option=option_disagree)
+        person1 = Person.objects.create(
+            personal="Harry", family="Potter", email="hp@magic.uk"
+        )
+        Consent.objects.create(person=person1, term=term1, term_option=term1_option1)
+        with self.assertRaises(IntegrityError):
+            Consent.objects.create(
+                person=person1, term=term1, term_option=term1_option2
+            )
 
-        consent = Consent.objects.get(person=self.admin, term_option__term=term)
-        consent.archived_at = datetime.now()
-        consent.save()
-
-        consent = Consent.objects.create(person=self.admin, term_option=option_agree)
+    def test_term_and_term_option_should_match(self):
+        """Term was added to the Consent model to avoid too many complicated joins.
+        The term option should always be related to the term stored in the table."""
+        term1 = Term.objects.create(
+            content="term1", slug="term1", archived_at=timezone.now()
+        )
+        term2_option1 = TermOption.objects.create(
+            term=Term.objects.create(
+                content="term2", slug="term2", archived_at=timezone.now()
+            ),
+            option_type="agree",
+            content="option1",
+        )
+        person = Person.objects.create(
+            personal="Harry", family="Potter", email="hp@magic.uk"
+        )
+        with self.assertRaisesRegex(
+            ValidationError, r"Consent term\.id must match term_option\.term_id"
+        ):
+            Consent.objects.create(person=person, term=term1, term_option=term2_option1)
