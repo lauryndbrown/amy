@@ -1,27 +1,25 @@
 from consents.models import Consent
 from workshops.base_views import RedirectSupportMixin
-from consents.forms import ConsentsForm
+from consents.forms import ConsentForm
 from workshops.base_views import AMYCreateView
 
 
 class ConsentUpdate(RedirectSupportMixin, AMYCreateView):
     model = Consent
-    form_class = ConsentsForm
+    form_class = ConsentForm
     success_url = "consents/edit"
 
     def get_success_url(self):
-        next_url = self.request.GET.get("next", None)
+        # Currently can only be called via redirect.
+        # There is no direct view for Consents.
+        next_url = self.request.GET["next"]
         return next_url
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs.update({"prefix": "consents"})
+        person = kwargs["data"]["consents-person"]
+        kwargs.update({"prefix": "consents", "person": person})
         return kwargs
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        return context
-
-    def form_valid(self, form):
-        res = super().form_valid(form)
-        return res
+    def get_success_message(self, *args, **kwargs):
+        return "Consents were successfully updated."

@@ -126,7 +126,7 @@ from workshops.util import (
     login_required,
     add_comment,
 )
-from consents.forms import ConsentsForm
+from consents.forms import ConsentForm
 
 
 logger = logging.getLogger("amy.signals")
@@ -604,6 +604,7 @@ class PersonUpdate(OnlyForAdminsMixin, UserPassesTestMixin, AMYUpdateView):
             "initial": {"person": self.object},
             "widgets": {"person": HiddenInput()},
         }
+
         context.update(
             {
                 "awards": self.object.award_set.select_related(
@@ -612,8 +613,8 @@ class PersonUpdate(OnlyForAdminsMixin, UserPassesTestMixin, AMYUpdateView):
                 "tasks": self.object.task_set.select_related("role", "event").order_by(
                     "-event__slug"
                 ),
-                "consents_form": ConsentsForm(
-                    form_tag=False, prefix="consents", **kwargs
+                "consents_form": ConsentForm(
+                    form_tag=False, prefix="consents", person=self.object, **kwargs
                 ),
                 "award_form": AwardForm(form_tag=False, prefix="award", **kwargs),
                 "task_form": TaskForm(form_tag=False, prefix="task", **kwargs),

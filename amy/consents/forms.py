@@ -1,71 +1,41 @@
+from typing import Iterable
 from consents.models import Consent
 from django import forms
 from workshops.forms import BootstrapHelper
 from consents.models import Term, TermOption
-from datetime import datetime
 from workshops.forms import WidgetOverrideMixin
+from workshops.models import Person
+from django.utils import timezone
 
-OPTION_DISPLAY = {"agree": "Yes", "disagree": "No", "unset": "unset"}
+
+OPTION_DISPLAY = {
+    TermOption.AGREE: "Yes",
+    TermOption.DECLINE: "No",
+    TermOption.UNSET: "unset",
+}
 
 
 def option_display_value(option: TermOption) -> str:
     return option.content or OPTION_DISPLAY[option.option_type]
 
 
-class TermForm(forms.ModelForm):
-    class Meta:
-        model = Term
-        fields = ["content"]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["options"] = self.create_options_field()
-
-    def create_options_field(self):
-        if not self.instance:
-            return []
-        options = self.instance.prefetch_active_options().options
-        options = [(opt.id, option_display_value(opt)) for opt in self.instance.options]
-
-        required = False if self.instance.required_type == "optional" else True
-        field = forms.ChoiceField(
-            widget=forms.RadioSelect,
-            choices=options,
-            label=self.instance.content,
-            required=required,
-        )
-        return field
-
-
-class ConsentsForm(WidgetOverrideMixin, forms.ModelForm):
+class ConsentForm(WidgetOverrideMixin, forms.ModelForm):
     class Meta:
         model = Consent
         fields = ["person"]
 
     def __init__(self, *args, **kwargs):
         form_tag = kwargs.pop("form_tag", True)
-        # TODO how to get the person value out of the person field
-        if "data" in kwargs:
-            if "person" in kwargs["data"]:
-                person = kwargs["data"]["person"]
-            else:
-                person = kwargs["data"]["consents-person"]
-        else:
-            person = kwargs["initial"]["person"]
+        person = kwargs.pop("person")
         super().__init__(*args, **kwargs)
-
-        self._build_terms_form(person)
+        self._build_form(person)
         self.helper = BootstrapHelper(add_cancel_button=False, form_tag=form_tag)
 
-    def _build_terms_form(self, person) -> None:
+    def _build_form(self, person: Person) -> None:
         """
         Construct a Form of all nonarchived Terms with the
         consent answers added as initial.
         """
-
-        def option_display_value(option: TermOption) -> str:
-            return option.content or OPTION_DISPLAY[option.option_type]
-
         self.terms = Term.objects.active().prefetch_active_options()
         term_id_by_option_id = {
             consent.term_id: consent.term_option_id
@@ -74,17 +44,25 @@ class ConsentsForm(WidgetOverrideMixin, forms.ModelForm):
             )
         }
         for term in self.terms:
-            options = [(opt.id, option_display_value(opt)) for opt in term.options]
-            required = False if term.required_type == "optional" else True
-            initial = term_id_by_option_id.get(term.id, None)
-
-            self.fields[term.slug] = forms.ChoiceField(
-                widget=forms.RadioSelect,
-                choices=options,
-                label=term.content,
-                required=required,
-                initial=initial,
+            self.fields[term.slug] = self.create_options_field(
+                term=term,
+                options=term.options,
+                selected=term_id_by_option_id.get(term.id, None),
             )
+
+    def create_options_field(
+        self, term: Term, options: Iterable[TermOption], selected=None
+    ):
+        options = [(opt.id, option_display_value(opt)) for opt in options]
+        required = False if term.required_type == Term.OPTIONAL_REQUIRE_TYPE else True
+        field = forms.ChoiceField(
+            widget=forms.RadioSelect,
+            choices=options,
+            label=term.content,
+            required=required,
+            initial=selected,
+        )
+        return field
 
     def save(self, *args, **kwargs):
         person = self.cleaned_data["person"]
@@ -99,7 +77,7 @@ class ConsentsForm(WidgetOverrideMixin, forms.ModelForm):
             except Consent.DoesNotExist:
                 pass
             else:
-                consent.archived_at = datetime.now()
+                consent.archived_at = timezone.now()
                 consent.save()
             Consent.objects.create(
                 person=person, term_option_id=option_id, term_id=term.id
