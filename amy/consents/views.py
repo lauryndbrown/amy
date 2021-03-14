@@ -1,7 +1,7 @@
 from consents.models import Consent
 from workshops.base_views import RedirectSupportMixin
 from consents.forms import ConsentForm
-from workshops.base_views import AMYCreateView
+from workshops.base_views import AMYCreateView, AMYDeleteView
 
 
 class ConsentUpdate(RedirectSupportMixin, AMYCreateView):
@@ -23,3 +23,7 @@ class ConsentUpdate(RedirectSupportMixin, AMYCreateView):
 
     def get_success_message(self, *args, **kwargs):
         return "Consents were successfully updated."
+
+
+class ConsentDelete(RedirectSupportMixin, AMYDeleteView):
+    pass
